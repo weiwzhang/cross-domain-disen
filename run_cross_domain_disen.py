@@ -436,7 +436,8 @@ def main():
     with tf.name_scope("parameter_count"):
         parameter_count = tf.reduce_sum([tf.reduce_prod(tf.shape(v)) for v in tf.trainable_variables()])
 
-    saver = tf.train.Saver(max_to_keep=1)
+    # saver = tf.train.Saver(max_to_keep=1)
+    saver = tf.train.import_meta_graph("checkpoints/model.meta", import_scope=None)
 
     logdir = a.output_dir if (a.trace_freq > 0 or a.summary_freq > 0) else None
     sv = tf.train.Supervisor(logdir=logdir, save_summaries_secs=0, saver=None)
@@ -448,6 +449,8 @@ def main():
             print("loading model from checkpoint")
             checkpoint = tf.train.latest_checkpoint(a.checkpoint)
             saver.restore(sess, checkpoint)
+            input_ = tf.get_collection("input:0", scope="")[0]
+            output_ = tf.get_collection("output:0", scope="")[0]
 
         max_steps = 2**32
         if a.max_epochs is not None:
