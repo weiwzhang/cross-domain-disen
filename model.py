@@ -16,16 +16,16 @@ import time
 from ops import *
 from encoder import *
 from decoder import *
-from decoderExclusive import *
+#from decoderExclusive import *
 from discriminatorWGANGP import *
 
 
 LAMBDA = 10
 
+ 
+
 Model = collections.namedtuple("Model", "outputsX2Y, outputsY2X,\
                                outputsX2Yp, outputsY2Xp,\
-                               outputs_exclusiveX2Y,outputs_exclusiveY2X,\
-                               discrim_exclusiveX2Y_loss,discrim_exclusiveY2X_loss,\
                                auto_outputX, auto_outputY\
                                predict_realX2Y, predict_realY2X,\
                                predict_fakeX2Y, predict_fakeY2X,\
@@ -33,7 +33,6 @@ Model = collections.namedtuple("Model", "outputsX2Y, outputsY2X,\
                                eR_X2Y,eR_Y2X,\
                                discrimX2Y_loss, discrimY2X_loss,\
                                genX2Y_loss, genY2X_loss,\
-                               gen_exclusiveX2Y_loss,gen_exclusiveY2X_loss\
                                autoencoderX_loss, autoencoderY_loss,\
                                feat_recon_loss,code_recon_loss,\
                                code_sR_X2Y_recon_loss,code_sR_Y2X_recon_loss,\
@@ -41,6 +40,8 @@ Model = collections.namedtuple("Model", "outputsX2Y, outputsY2X,\
                                im_swapped_Y,sel_auto_Y\
                                im_swapped_X,sel_auto_X\
                                train")
+
+# outputs_exclusiveX2Y,outputs_exclusiveY2X,\discrim_exclusiveX2Y_loss,discrim_exclusiveY2X_loss,\ gen_exclusiveX2Y_loss,gen_exclusiveY2X_loss\
 
 def create_model(inputsX, inputsY, a):
 
@@ -136,6 +137,7 @@ def create_model(inputsX, inputsY, a):
 
     ######### EXCLUSIVE REPRESENTATION
     # Create generators/discriminators for exclusive representation
+    '''
     with tf.variable_scope("generator_exclusiveX2Y_decoder"):
         outputs_exclusiveX2Y = create_generator_decoder_exclusive(eR_X2Y, out_channels, a)
 
@@ -158,7 +160,7 @@ def create_model(inputsX, inputsY, a):
     with tf.name_scope("fake_discriminator_exclusiveY2Y"):
         with tf.variable_scope("discriminator_exclusiveY2X", reuse=True):
             predict_fake_exclusiveY2X = create_discriminator(inputsY, outputs_exclusiveY2X, a)
-
+    '''
 
     ######### LOSSES
 
@@ -201,6 +203,8 @@ def create_model(inputsX, inputsY, a):
         gradient_penalty = tf.reduce_mean((slopes-1.)**2)
         discrimY2X_loss += LAMBDA*gradient_penalty
 
+    '''
+
     with tf.name_scope("generator_exclusiveX2Y_loss"):
         gen_exclusiveX2Y_loss_GAN = -tf.reduce_mean(predict_fake_exclusiveX2Y)
         gen_exclusiveX2Y_loss = gen_exclusiveX2Y_loss_GAN * a.gan_exclusive_weight
@@ -235,6 +239,7 @@ def create_model(inputsX, inputsY, a):
                                        reduction_indices=[1]))
         gradient_penalty = tf.reduce_mean((slopes-1.)**2)
         discrim_exclusiveY2X_loss += LAMBDA*gradient_penalty
+    '''
 
     with tf.name_scope("autoencoderX_loss"):
         autoencoderX_loss = a.l1_weight*tf.reduce_mean(tf.abs(auto_outputX-inputsX))
@@ -281,6 +286,8 @@ def create_model(inputsX, inputsY, a):
             genY2X_grads_and_vars = genY2X_optim.compute_gradients(genY2X_loss, var_list=genY2X_tvars)
             genY2X_train = genY2X_optim.apply_gradients(genY2X_grads_and_vars)
 
+    '''
+
     with tf.name_scope("discriminator_exclusiveX2Y_train"):
         discrim_exclusiveX2Y_tvars = [var for var in tf.trainable_variables() if var.name.startswith("discriminator_exclusiveX2Y")]
         discrim_exclusiveX2Y_optim = tf.train.AdamOptimizer(a.lr, a.beta1)
@@ -310,7 +317,7 @@ def create_model(inputsX, inputsY, a):
             gen_exclusiveY2X_optim = tf.train.AdamOptimizer(a.lr, a.beta1)
             gen_exclusiveY2X_grads_and_vars = gen_exclusiveY2X_optim.compute_gradients(gen_exclusiveY2X_loss, var_list=gen_exclusiveY2X_tvars)
             gen_exclusiveY2X_train = gen_exclusiveY2X_optim.apply_gradients(gen_exclusiveY2X_grads_and_vars)
-
+    '''
     with tf.name_scope("autoencoderX_train"):
         autoencoderX_tvars = [var for var in tf.trainable_variables() if
                               var.name.startswith("generatorX2Y_encoder")
@@ -346,18 +353,16 @@ def create_model(inputsX, inputsY, a):
         code_recon_grads_and_vars = code_recon_optim.compute_gradients(code_recon_loss, var_list=code_recon_tvars)
         code_recon_train = code_recon_optim.apply_gradients(code_recon_grads_and_vars)
 
-
-
-
     ema = tf.train.ExponentialMovingAverage(decay=0.99)
     update_losses = ema.apply([discrimX2Y_loss, discrimY2X_loss,
                                genX2Y_loss, genY2X_loss,
                                autoencoderX_loss, autoencoderY_loss,
                                feat_recon_loss,code_recon_loss,
                                code_sR_X2Y_recon_loss, code_sR_Y2X_recon_loss,
-                               code_eR_X2Y_recon_loss, code_eR_Y2X_recon_loss,
-                               discrim_exclusiveX2Y_loss, discrim_exclusiveY2X_loss,
-                               gen_exclusiveX2Y_loss, gen_exclusiveY2X_loss])
+                               code_eR_X2Y_recon_loss, code_eR_Y2X_recon_loss])                               
+                               #,discrim_exclusiveX2Y_loss, discrim_exclusiveY2X_loss,
+                               #gen_exclusiveX2Y_loss, gen_exclusiveY2X_loss])
+
 
     global_step = tf.train.get_or_create_global_step()
     incr_global_step = tf.assign(global_step, global_step+1)
@@ -378,16 +383,16 @@ def create_model(inputsX, inputsY, a):
         discrimY2X_loss=ema.average(discrimY2X_loss),
         genX2Y_loss=ema.average(genX2Y_loss),
         genY2X_loss=ema.average(genY2X_loss),
-        discrim_exclusiveX2Y_loss=ema.average(discrim_exclusiveX2Y_loss),
-        discrim_exclusiveY2X_loss=ema.average(discrim_exclusiveY2X_loss),
-        gen_exclusiveX2Y_loss=ema.average(gen_exclusiveX2Y_loss),
-        gen_exclusiveY2X_loss=ema.average(gen_exclusiveY2X_loss),
+        #discrim_exclusiveX2Y_loss=ema.average(discrim_exclusiveX2Y_loss),
+        #discrim_exclusiveY2X_loss=ema.average(discrim_exclusiveY2X_loss),
+        #gen_exclusiveX2Y_loss=ema.average(gen_exclusiveX2Y_loss),
+        #gen_exclusiveY2X_loss=ema.average(gen_exclusiveY2X_loss),
         outputsX2Y=outputsX2Y,
         outputsY2X=outputsY2X,
         outputsX2Yp=outputsX2Yp,
         outputsY2Xp=outputsY2Xp,
-        outputs_exclusiveX2Y=outputs_exclusiveX2Y,
-        outputs_exclusiveY2X=outputs_exclusiveY2X,
+        #outputs_exclusiveX2Y=outputs_exclusiveX2Y,
+        #outputs_exclusiveY2X=outputs_exclusiveY2X,
         auto_outputX = auto_outputX,
         autoencoderX_loss=ema.average(autoencoderX_loss),
         auto_outputY = auto_outputY,
@@ -399,8 +404,8 @@ def create_model(inputsX, inputsY, a):
         code_eR_X2Y_recon_loss=ema.average(code_eR_X2Y_recon_loss),
         code_eR_Y2X_recon_loss=ema.average(code_eR_Y2X_recon_loss),
         train=tf.group(update_losses, incr_global_step, genX2Y_train,
-                       genY2X_train, autoencoderX_train, autoencoderY_train,code_recon_train,
-                       gen_exclusiveX2Y_train,gen_exclusiveY2X_train,feat_recon_train),
+                       genY2X_train, autoencoderX_train, autoencoderY_train,code_recon_train,feat_recon_train),
+                       #gen_exclusiveX2Y_train,gen_exclusiveY2X_train,feat_recon_train),
     )
 
 
