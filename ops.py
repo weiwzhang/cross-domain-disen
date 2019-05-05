@@ -106,7 +106,7 @@ def lrelu(x, a):
         return (0.5 * (1 + a)) * x + (0.5 * (1 - a)) * tf.abs(x)
 
 
-def res_net(batch_input, depth):
+def res_net(batch_input, depth, type_conv):
     input_channel = batch_input.get_shape().as_list()[-1]
 
 
@@ -114,7 +114,10 @@ def res_net(batch_input, depth):
     #conv1 = tf.layers.conv2d(batch_input, depth, kernel_size=4, strides=(1, 1), padding="same", kernel_initializer=initializer)
     #relu1 = lrelu(conv1,0.2)
 
+    #if type_conv == "encoder":
     conv2 = tf.layers.conv2d(batch_input, depth, kernel_size=4, strides=(2, 2), padding="same", kernel_initializer=initializer)
+    #else:
+        #conv2 = tf.layers.conv2d_transpose(batch_input, depth, kernel_size=4, strides=(2, 2), padding="same", kernel_initializer=initializer)
     conv2 = lrelu(conv2,0.2)
     pooled_input = tf.nn.avg_pool(batch_input, ksize = [1, 2, 2, 1], strides = (1,2, 2, 1), padding = "VALID")
     #conv2 = tf.layers.conv2d(relu1, depth, kernel_size=4, strides=(1, 1), padding="same", kernel_initializer=initializer)
@@ -124,6 +127,8 @@ def res_net(batch_input, depth):
     output = batch_input + conv2
 
     return output
+
+
 
 def n_res_blocks(batch_input, n=6):
     depth = batch_input.get_shape()[3]

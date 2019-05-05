@@ -64,8 +64,8 @@ def create_generator_decoder(sR, eR, generator_outputs_channels, a, noise = True
 
             rectified = tf.nn.relu(input)
             # [batch, in_height, in_width, in_channels] => [batch, in_height*2, in_width*2, out_channels]
-            output = gen_deconv(rectified, out_channels, a) #CHANGED THIS
-            #output = res_net(rectified, out_channels)
+            #output = gen_deconv(rectified, out_channels, a) #CHANGED THIS
+            output = res_net(rectified, out_channels, "decoder")
             output = batchnorm(output)
 
             if dropout > 0.0:
@@ -79,7 +79,7 @@ def create_generator_decoder(sR, eR, generator_outputs_channels, a, noise = True
         input = layers[-1]
         rectified = tf.nn.relu(input)
         output = gen_deconv(rectified, generator_outputs_channels, a) #CHANGED
-        #output = res_net(rectified, generator_outputs_channels)
+        #output = res_net(rectified, generator_outputs_channels, "decoder")
         output = tf.tanh(output)
         layers.append(output)
 

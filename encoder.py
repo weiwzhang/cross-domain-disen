@@ -22,7 +22,7 @@ def create_generator_encoder(generator_inputs, a):
     i = 0
     with tf.variable_scope("encoder_1"):
        #output = gen_conv(generator_inputs, a.ngf, a) #CHANGED
-       output = res_net(generator_inputs, a.ngf)
+       output = res_net(generator_inputs, a.ngf, "encoder")
        #print(i)
        #print(output.shape)
        i += 1
@@ -41,7 +41,7 @@ def create_generator_encoder(generator_inputs, a):
             rectified = lrelu(layers[-1], 0.2)
             # [batch, in_height, in_width, in_channels] => [batch, in_height/2, in_width/2, out_channels]
             #convolved = gen_conv(rectified, out_channels, a) #CHANGED
-            convolved = res_net(rectified, out_channels)
+            convolved = res_net(rectified, out_channels, "encoder")
             #print(i)
             #print(convolved.shape)
             i += 1
