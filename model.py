@@ -24,8 +24,6 @@ LAMBDA = 10
 
 Model = collections.namedtuple("Model", "outputsX2Y, outputsY2X,\
                                outputsX2Yp, outputsY2Xp,\
-                               outputs_exclusiveX2Y,outputs_exclusiveY2X,\
-                               discrim_exclusiveX2Y_loss,discrim_exclusiveY2X_loss,\
                                auto_outputX, auto_outputY\
                                predict_realX2Y, predict_realY2X,\
                                predict_fakeX2Y, predict_fakeY2X,\
@@ -33,7 +31,6 @@ Model = collections.namedtuple("Model", "outputsX2Y, outputsY2X,\
                                eR_X2Y,eR_Y2X,\
                                discrimX2Y_loss, discrimY2X_loss,\
                                genX2Y_loss, genY2X_loss,\
-                               gen_exclusiveX2Y_loss,gen_exclusiveY2X_loss\
                                autoencoderX_loss, autoencoderY_loss,\
                                feat_recon_loss,code_recon_loss,\
                                code_sR_X2Y_recon_loss,code_sR_Y2X_recon_loss,\
@@ -355,9 +352,9 @@ def create_model(inputsX, inputsY, a):
                                autoencoderX_loss, autoencoderY_loss,
                                feat_recon_loss,code_recon_loss,
                                code_sR_X2Y_recon_loss, code_sR_Y2X_recon_loss,
-                               code_eR_X2Y_recon_loss, code_eR_Y2X_recon_loss,
-                               discrim_exclusiveX2Y_loss, discrim_exclusiveY2X_loss,
-                               gen_exclusiveX2Y_loss, gen_exclusiveY2X_loss])
+                               code_eR_X2Y_recon_loss, code_eR_Y2X_recon_loss])
+                               #discrim_exclusiveX2Y_loss, discrim_exclusiveY2X_loss,
+                               #gen_exclusiveX2Y_loss, gen_exclusiveY2X_loss])
 
     global_step = tf.train.get_or_create_global_step()
     incr_global_step = tf.assign(global_step, global_step+1)
@@ -399,7 +396,7 @@ def create_model(inputsX, inputsY, a):
         code_eR_X2Y_recon_loss=ema.average(code_eR_X2Y_recon_loss),
         code_eR_Y2X_recon_loss=ema.average(code_eR_Y2X_recon_loss),
         train=tf.group(update_losses, incr_global_step, genX2Y_train,
-                       genY2X_train, autoencoderX_train, autoencoderY_train,code_recon_train, feat_recon_train)
+                       genY2X_train, autoencoderX_train, autoencoderY_train,code_recon_train, feat_recon_train),
                        #gen_exclusiveX2Y_train,gen_exclusiveY2X_train,feat_recon_train),
     )
 
