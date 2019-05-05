@@ -19,8 +19,13 @@ def create_generator_encoder(generator_inputs, a):
     layers = []
 
     # encoder_1: [batch, 256, 256, in_channels] => [batch, 128, 128, ngf]
+    i = 0
     with tf.variable_scope("encoder_1"):
-       output = gen_conv(generator_inputs, a.ngf, a)
+       #output = gen_conv(generator_inputs, a.ngf, a) #CHANGED
+       output = res_net(generator_inputs, a.ngf)
+       print(i)
+       print(output.shape)
+       i += 1
        layers.append(output)
 
     layer_specs = [
@@ -35,14 +40,18 @@ def create_generator_encoder(generator_inputs, a):
         with tf.variable_scope("encoder_%d" % (len(layers) + 1)):
             rectified = lrelu(layers[-1], 0.2)
             # [batch, in_height, in_width, in_channels] => [batch, in_height/2, in_width/2, out_channels]
-            convolved = gen_conv(rectified, out_channels, a)
+            #convolved = gen_conv(rectified, out_channels, a) #CHANGED
+            convolved = res_net(rectified, out_channels)
+            print(i)
+            print(convolved.shape)
+            i += 1
             output = batchnorm(convolved)
             layers.append(output)
 
     # Exclusive part of representation uses FC layer
     with tf.variable_scope("encoder_exclusive"):
         rinput = tf.reshape(rectified, [-1, 16*16*8*a.ngf])
-        outputE = gen_fc(rinput,out_channels=8)
+        outputE = gen_fc(rinput,out_channels=128)
 
 
     sR = output
