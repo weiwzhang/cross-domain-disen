@@ -12,6 +12,9 @@ import random
 import collections
 import math
 import time
+import io
+import cv2
+import pandas as pd
 
 from ops import *
 from model import create_model
@@ -173,8 +176,8 @@ def save_images(fetches, step=None):
             with open(out_path, "wb") as f:
                 f.write(contents)
         filesets.append(fileset)
-    return filesets
 
+    return filesets
 
 def save_features(fetches, step=None):
     image_dir = os.path.join(a.output_dir, "features")
@@ -224,6 +227,26 @@ def append_index(filesets, step=False):
 
         index.write("</tr>")
     return index_path
+
+# calculate Euclidean distance between auto_outputX (auto_outputY) and inputsX (inputsY)
+# TODO: generalize to more metrics
+def calc_img_euclidean_dist(fetches, step=None):
+    metrics = {'diff_X': [], 'diff_Y': []}
+    for i, in_path in enumerate(fetches["paths"]):
+        all_kinds = ["inputsX", "outputsX2Y", "outputsX2Yp",
+                         "auto_outputsX","im_swapped_X", "sel_auto_X","inputsY",
+                         "outputsY2X", "outputsY2Xp","auto_outputsY" ,"im_swapped_Y", "sel_auto_Y"]
+
+        auto_outputsX = cv2.imdecode(np.frombuffer(fetches['auto_outputsX'][i], np.uint8), -1)
+        inputsX = cv2.imdecode(np.frombuffer(fetches['inputsX'][i], np.uint8), -1)
+        distX = np.sqrt(np.sum(np.square(auto_outputsX - inputsX)))
+        metrics['diff_X'].append(distX)
+        auto_outputsY = cv2.imdecode(np.frombuffer(fetches['auto_outputsY'][i], np.uint8), -1)
+        inputsY = cv2.imdecode(np.frombuffer(fetches['inputsY'][i], np.uint8), -1)
+        distY = np.sqrt(np.sum(np.square(auto_outputsY - inputsY)))
+        metrics['diff_Y'].append(distY)
+
+    return metrics
 
 
 def main():
@@ -294,7 +317,7 @@ def main():
 
     # reverse any processing on images so they can be written to disk or displayed to user
     with tf.name_scope("convert_inputsX"):
-        converted_inputsX = convert(inputsX)
+        converted_inputsX = convert(inputsX)  # an uint8 Tensor
 
     with tf.name_scope("convert_inputsY"):
         converted_inputsY = convert(inputsY)
@@ -460,12 +483,29 @@ def main():
             # at most, process the test data once
             start = time.time()
             max_steps = min(examples.steps_per_epoch, max_steps)
+
+            # track metrics
+            # diff_X: Euclidean dist between inputX and auto-generated X (diff_Y: vice versa)
+            metrics = {'diff_X': [], 'diff_Y': []}   
+            filenames = []
             for step in range(max_steps):
                 results = sess.run(display_fetches)
                 filesets = save_images(results)
+
+                # calculate per-batch metrics
+                curr_metrics = calc_img_euclidean_dist(results)
+                for k, v in metrics.items():
+                    metrics[k].extend(curr_metrics[k])
+                filenames.extend(results['paths'])
+
                 for i, f in enumerate(filesets):
                     print("evaluated image", f["name"])
                 index_path = append_index(filesets)
+
+            metrics_table = pd.DataFrame(metrics)
+            metrics_table['img'] = filenames
+            metrics_table.to_csv('metrics.csv', index=False)   
+
             print("wrote index at", index_path)
             print("rate", (time.time() - start) / max_steps)
 
