@@ -67,11 +67,14 @@ def gen_fc(batch_input, out_channels=8):
 
 def gen_conv(batch_input, out_channels, a):
     # [batch, in_height, in_width, in_channels] => [batch, out_height, out_width, out_channels]
+    #print(batch_input.shape)
     initializer = tf.random_normal_initializer(0, 0.02)
     if a.separable_conv:
         return tf.layers.separable_conv2d(batch_input, out_channels, kernel_size=4, strides=(2, 2), padding="same", depthwise_initializer=initializer, pointwise_initializer=initializer)
     else:
-        return tf.layers.conv2d(batch_input, out_channels, kernel_size=4, strides=(2, 2), padding="same", kernel_initializer=initializer)
+        lay = tf.layers.conv2d(batch_input, out_channels, kernel_size=4, strides=(2, 2), padding="same", kernel_initializer=initializer)
+        #print(lay.shape)
+        return lay
 
 def gen_deconv(batch_input, out_channels, a):
     # [batch, in_height, in_width, in_channels] => [batch, out_height, out_width, out_channels]
@@ -103,15 +106,29 @@ def lrelu(x, a):
         return (0.5 * (1 + a)) * x + (0.5 * (1 - a)) * tf.abs(x)
 
 
-def res_net(batch_input, depth):
+def res_net(batch_input, depth, type_conv):
+    input_channel = batch_input.get_shape().as_list()[-1]
+
+
     initializer = tf.random_normal_initializer(0, 0.02)
-    conv1 = tf.layers.conv2d(batch_input, depth, kernel_size=4, strides=(1, 1), padding="same", kernel_initializer=initializer)
-    relu1 = lrelu(conv1,0.2)
+    #conv1 = tf.layers.conv2d(batch_input, depth, kernel_size=4, strides=(1, 1), padding="same", kernel_initializer=initializer)
+    #relu1 = lrelu(conv1,0.2)
 
-    conv2 = tf.layers.conv2d(relu1, depth, kernel_size=4, strides=(1, 1), padding="same", kernel_initializer=initializer)
-
+    #if type_conv == "encoder":
+    conv2 = tf.layers.conv2d(batch_input, depth, kernel_size=4, strides=(2, 2), padding="same", kernel_initializer=initializer)
+    #else:
+        #conv2 = tf.layers.conv2d_transpose(batch_input, depth, kernel_size=4, strides=(2, 2), padding="same", kernel_initializer=initializer)
+    conv2 = lrelu(conv2,0.2)
+    pooled_input = tf.nn.avg_pool(batch_input, ksize = [1, 2, 2, 1], strides = (1,2, 2, 1), padding = "VALID")
+    #conv2 = tf.layers.conv2d(relu1, depth, kernel_size=4, strides=(1, 1), padding="same", kernel_initializer=initializer)
+    #print(depth)
+    pad_len = (depth - input_channel) // 2
+    batch_input = tf.pad(pooled_input, [[0,0], [0,0], [0,0], [pad_len, depth - pad_len - input_channel]])
     output = batch_input + conv2
+
     return output
+
+
 
 def n_res_blocks(batch_input, n=6):
     depth = batch_input.get_shape()[3]

@@ -438,5 +438,3 @@ def create_visual_analogy(sR, eR, auto_output, inputs, which_direction, a):
 
 
         return im_swapped, tf.stack(sel_auto)
-
-
