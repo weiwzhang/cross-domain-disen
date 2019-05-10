@@ -4,6 +4,6 @@ test
 models
 checkpoints
 .idea
-data
+DATA
 VGG_Model
 oldcode
